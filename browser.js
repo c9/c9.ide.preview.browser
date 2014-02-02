@@ -1,49 +1,38 @@
 define(function(require, exports, module) {
-    main.consumes = ["plugin", "menus", "preview", "tabs", "layout"];
+    main.consumes = [
+        "Previewer", "preview", "vfs", "tabManager", "PostMessage", 
+        "CSSDocument", "HTMLDocument"
+    ];
     main.provides = ["preview.browser"];
     return main;
 
     function main(options, imports, register) {
-        var Plugin   = imports.plugin;
-        var preview  = imports.preview;
-        var tabs     = imports.tabs;
-        var menus    = imports.menus;
-        var layout   = imports.layout;
-        // var Menu     = menus.Menu;
-        var MenuItem = menus.MenuItem;
-        var Divider  = menus.Divider;
+        var Previewer    = imports.Previewer;
+        var tabManager   = imports.tabManager;
+        var preview      = imports.preview;
+        var PostMessage  = imports.PostMessage;
+        var CSSDocument  = imports.CSSDocument;
+        var HTMLDocument = imports.HTMLDocument;
+        // var JSDocument   = imports.JSDocument;
+        
+        // var join        = require("path").join;
+        // var dirname     = require("path").dirname;
         
         /***** Initialization *****/
         
-        var plugin = new Plugin("Ajax.org", main.consumes);
-        // var emit   = plugin.getEmitter();
-        
-        var loaded = false;
-        function load(){
-            if (loaded) return false;
-            loaded = true;
-            
-            preview.register(plugin, function(path){
+        var plugin = new Previewer("Ajax.org", main.consumes, {
+            caption  : "Browser",
+            index    : 10,
+            divider  : true,
+            selector : function(path){
                 return path.match(/(?:\.html|\.htm|\.xhtml)$|^https?\:\/\//);
-            });
-            
-            var menu = preview.previewMenu;
-            menu.append(new MenuItem({ 
-                caption  : "Browser", 
-                position : 10,
-                onclick  : function(){
-                    
-                    // The menu can only be shown if the previewer has focus
-                    var editor = tabs.focussedPage.editor;
-                    editor.setPreviewer("preview.browser");
-                }
-            }));
-            menu.append(new Divider({ position: 20 }));
-        }
+            }
+        });
+        
+        var BASEPATH = preview.previewUrl;
+        var counter  = 0;
         
         /***** Methods *****/
-        
-        const BASEPATH = location.protocol + "//" + location.host + "/workspace";
         
         function calcRootedPath(url){
             if (url.substr(0, BASEPATH.length) == BASEPATH)
@@ -51,11 +40,22 @@ define(function(require, exports, module) {
             return url;
         }
         
-        function loadDocument(doc, preview){
+        /***** Lifecycle *****/
+        
+        plugin.on("load", function(){
+        });
+        plugin.on("documentLoad", function(e){
+            var doc     = e.doc;
             var session = doc.getSession();
-            var page    = doc.page;
+            var tab     = doc.tab;
+            var editor  = e.editor;
+            
+            if (session.iframe) return;
             
             var iframe = document.createElement("iframe");
+            // iframe.setAttribute("nwfaketop", true);
+            iframe.setAttribute("nwdisable", true);
+            
             iframe.style.width    = "100%";
             iframe.style.height   = "100%";
             iframe.style.border   = 0;
@@ -66,69 +66,95 @@ define(function(require, exports, module) {
                 
                 var path = calcRootedPath(iframe.src);
                 
-                page.title   = 
-                page.tooltip = "[B] " + path;
+                tab.title   = 
+                tab.tooltip = "[B] " + path;
                 session.lastSrc  = iframe.src;
                 
-                preview.getElement("txtPreview").setValue(path);
-                page.className.remove("loading");
+                if (options.local)
+                    plugin.activeSession.add(iframe.contentWindow.location.href);
                 
-                try{ iframe.contentWindow.document } 
-                catch(e) { 
-                    layout.showError("Could not access: " + session.path 
-                        + ". Reason: " + e.message); 
-                    return;
-                }
+                editor.setLocation(path);
+                tab.className.remove("loading");
             });
             
-            session.on("navigate", function(e){
-                var url = e.url.match(/^[a-z]\w{1,4}\:\/\//)
-                    ? e.url
-                    : BASEPATH + e.url;
-                
-                page.className.add("loading");
-                iframe.src = url;
-                
-                var path = calcRootedPath(url);
-                page.title   = 
-                page.tooltip = "[B] " + path;
-                preview.getElement("txtPreview").setValue(path);
-            }, session);
-            session.on("update", function(e){
-                if (e.saved)
-                    iframe.src = iframe.src;
-            }, session);
-            session.on("reload", function(e){
-                page.className.add("loading");
-                iframe.src = iframe.src;
-            }, session);
-            session.on("activate", function(){
-                var path = calcRootedPath(session.iframe.src);
-                
-                session.iframe.style.display = "block";
-                preview.getElement("txtPreview").setValue(path);
-                preview.getElement("btnMode").setCaption("Browser");
-                preview.getElement("btnMode").setIcon("page_white.png");
-            }, session);
-            session.on("deactivate", function(){
-                session.iframe.style.display = "none";
-            }, session);
+            session.id        = "livepreview" + counter++;
+            session.iframe    = iframe;
+            session.editor    = editor;
+            session.transport = new PostMessage(iframe, session.id);
             
-            session.iframe = iframe;
-            preview.container.appendChild(session.iframe);
-        }
-        
-        function unloadDocument(doc){
+            session.transport.on("ready", function(){
+                session.transport.getSources(function(err, sources){
+                    session.styleSheets = sources.styleSheets.map(function(path){
+                        return new CSSDocument(path).addTransport(session.transport);
+                    });
+                    // session.scripts = sources.scripts.map(function(path){
+                    //     return new JSDocument(path).addTransport(session.transport);
+                    // });
+                    session.html = sources.html.map(function(path){
+                        return new HTMLDocument(path).addTransport(session.transport);
+                    });
+                });
+            });
+            session.transport.on("focus", function(){
+                tabManager.focusTab(tab);
+            });
+            
+            session.addOther(function(){ session.transport.unload(); });
+            
+            editor.container.appendChild(session.iframe);
+        });
+        plugin.on("documentUnload", function(e){
+            var doc    = e.doc;
             var iframe = doc.getSession().iframe;
             iframe.parentNode.removeChild(iframe);
             
-            doc.page.className.remove("loading");
-        }
-        
-        /***** Lifecycle *****/
-        
-        plugin.on("load", function(){
-            load();
+            doc.tab.className.remove("loading");
+        });
+        plugin.on("documentActivate", function(e){
+            var session = e.doc.getSession();
+            var path = calcRootedPath(session.iframe.src);
+            
+            session.iframe.style.display = "block";
+            session.editor.setLocation(path);
+            session.editor.setButtonStyle("Browser", "page_white.png");
+        });
+        plugin.on("documentDeactivate", function(e){
+            var session = e.doc.getSession();
+            session.iframe.style.display = "none";
+        });
+        plugin.on("navigate", function(e){
+            var tab     = plugin.activeDocument.tab;
+            var session = plugin.activeSession;
+            var iframe  = session.iframe;
+            var url = e.url.match(/^[a-z]\w{1,4}\:\/\//)
+                ? e.url
+                : BASEPATH + e.url;
+            session.url = url;
+            
+            tab.className.add("loading");
+            iframe.src = url + (~url.indexOf("?") ? "&" : "?")
+                + "id=" + session.id
+                + "&host=" + (options.local ? "local" : location.origin);
+            
+            var path = calcRootedPath(url);
+            tab.title   = 
+            tab.tooltip = "[B] " + path;
+            plugin.activeSession.editor.setLocation(path);
+        });
+        plugin.on("update", function(e){
+            // var iframe = plugin.activeSession.iframe;
+            // if (e.saved)
+            //     iframe.src = iframe.src;
+        });
+        plugin.on("reload", function(){
+            var iframe = plugin.activeSession.iframe;
+            var tab    = plugin.activeDocument.tab;
+            tab.className.add("loading");
+            iframe.src = iframe.src;
+        });
+        plugin.on("popout", function(){
+            var src = plugin.activeSession.iframe.src;
+            window.open(src);
         });
         plugin.on("enable", function(){
             
@@ -137,27 +163,15 @@ define(function(require, exports, module) {
             
         });
         plugin.on("unload", function(){
-            loaded = false;
-            // drawn  = false;
         });
         
         /***** Register and define API *****/
         
         /**
-         * Draws the file tree
-         * @event afterfilesave Fires after a file is saved
-         *   object:
-         *     node     {XMLNode} description
-         *     oldpath  {String} description
+         * Previewer for content that the browser can display natively.
          **/
         plugin.freezePublicAPI({
-            /**
-             */
-            loadDocument : loadDocument,
             
-            /**
-             */
-            unloadDocument : unloadDocument
         });
         
         register(null, {
