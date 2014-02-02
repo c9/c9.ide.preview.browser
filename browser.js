@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Previewer", "preview", "vfs", "tabManager", "PostMessage", 
+        "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", 
         "CSSDocument", "HTMLDocument"
     ];
     main.provides = ["preview.browser"];
@@ -10,7 +10,7 @@ define(function(require, exports, module) {
         var Previewer    = imports.Previewer;
         var tabManager   = imports.tabManager;
         var preview      = imports.preview;
-        var PostMessage  = imports.PostMessage;
+        var PostMessage  = imports["remote.PostMessage"];
         var CSSDocument  = imports.CSSDocument;
         var HTMLDocument = imports.HTMLDocument;
         // var JSDocument   = imports.JSDocument;
@@ -90,9 +90,8 @@ define(function(require, exports, module) {
                     // session.scripts = sources.scripts.map(function(path){
                     //     return new JSDocument(path).addTransport(session.transport);
                     // });
-                    session.html = sources.html.map(function(path){
-                        return new HTMLDocument(path).addTransport(session.transport);
-                    });
+                    session.html = new HTMLDocument(sources.html)
+                        .addTransport(session.transport);
                 });
             });
             session.transport.on("focus", function(){
