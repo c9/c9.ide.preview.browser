@@ -18,6 +18,8 @@ define(function(require, exports, module) {
         // var join        = require("path").join;
         // var dirname     = require("path").dirname;
         
+        options.local = true;
+        
         /***** Initialization *****/
         
         var plugin = new Previewer("Ajax.org", main.consumes, {
@@ -38,6 +40,12 @@ define(function(require, exports, module) {
             if (url.substr(0, BASEPATH.length) == BASEPATH)
                 return url.substr(BASEPATH.length);
             return url;
+        }
+        
+        function cleanIframeSrc(src){
+            return src
+                .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
+                .replace(/[\?\&]$/, "");
         }
         
         /***** Lifecycle *****/
@@ -64,18 +72,21 @@ define(function(require, exports, module) {
             iframe.addEventListener("load", function(){
                 if (!iframe.src) return;
                 
-                var path = calcRootedPath(iframe.src
-                    .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
-                    .replace(/[\?\&]$/, ""));
+                var path = calcRootedPath(cleanIframeSrc(iframe.src));
                 
                 tab.title   = 
                 tab.tooltip = "[B] " + path;
                 session.lastSrc  = iframe.src;
                 
-                if (options.local)
-                    plugin.activeSession.add(iframe.contentWindow.location.href);
+                if (options.local) {
+                    var url = cleanIframeSrc(iframe.contentWindow.location.href);
+                    editor.setLocation(url);
+                    session.currentLocation = url;
+                }
+                else {
+                    editor.setLocation(path);
+                }
                 
-                editor.setLocation(path);
                 tab.className.remove("loading");
             });
             
@@ -116,7 +127,7 @@ define(function(require, exports, module) {
             var path = calcRootedPath(session.iframe.src);
             
             session.iframe.style.display = "block";
-            session.editor.setLocation(path);
+            session.editor.setLocation(path, true);
             session.editor.setButtonStyle("Browser", "page_white.png");
         });
         plugin.on("documentDeactivate", function(e){
@@ -140,7 +151,8 @@ define(function(require, exports, module) {
             var path = calcRootedPath(url);
             tab.title   = 
             tab.tooltip = "[B] " + path;
-            plugin.activeSession.editor.setLocation(path);
+            
+            plugin.activeSession.editor.setLocation(path, true);
         });
         plugin.on("update", function(e){
             // var iframe = plugin.activeSession.iframe;
@@ -157,11 +169,21 @@ define(function(require, exports, module) {
             var src = plugin.activeSession.iframe.src;
             window.open(src);
         });
-        plugin.on("enable", function(){
+        plugin.on("getState", function(e){
+            var session = e.doc.getSession();
+            var state   = e.state;
             
+            state.currentLocation = session.currentLocation;
         });
-        plugin.on("disable", function(){
+        plugin.on("setState", function(e){
+            var session = e.doc.getSession();
             
+            if (e.state.currentLocation) {
+                if (session.initPath)
+                    session.initPath = e.state.currentLocation;
+                // else
+                //     plugin.navigate({ url: e.state.currentLocation, doc: e.doc });
+            }
         });
         plugin.on("unload", function(){
         });
