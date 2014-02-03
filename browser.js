@@ -64,7 +64,9 @@ define(function(require, exports, module) {
             iframe.addEventListener("load", function(){
                 if (!iframe.src) return;
                 
-                var path = calcRootedPath(iframe.src);
+                var path = calcRootedPath(iframe.src
+                    .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
+                    .replace(/[\?\&]$/, ""));
                 
                 tab.title   = 
                 tab.tooltip = "[B] " + path;
@@ -132,8 +134,8 @@ define(function(require, exports, module) {
             
             tab.className.add("loading");
             iframe.src = url + (~url.indexOf("?") ? "&" : "?")
-                + "id=" + session.id
-                + "&host=" + (options.local ? "local" : location.origin);
+                + "_c9_id=" + session.id
+                + "&_c9_host=" + (options.local ? "local" : location.origin);
             
             var path = calcRootedPath(url);
             tab.title   = 
