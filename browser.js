@@ -18,8 +18,6 @@ define(function(require, exports, module) {
         // var join        = require("path").join;
         // var dirname     = require("path").dirname;
         
-        options.local = true;
-        
         /***** Initialization *****/
         
         var plugin = new Previewer("Ajax.org", main.consumes, {
