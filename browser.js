@@ -56,15 +56,19 @@ define(function(require, exports, module) {
             var tab     = doc.tab;
             var editor  = e.editor;
             
-            if (session.iframe) return;
+            if (session.iframe) {
+                session.editor = editor;
+                editor.container.appendChild(session.iframe);
+                return;
+            }
             
             var iframe = document.createElement("iframe");
             // iframe.setAttribute("nwfaketop", true);
             iframe.setAttribute("nwdisable", true);
             
-            iframe.style.width    = "100%";
-            iframe.style.height   = "100%";
-            iframe.style.border   = 0;
+            iframe.style.width  = "100%";
+            iframe.style.height = "100%";
+            iframe.style.border = 0;
             iframe.style.backgroundColor = "rgba(255, 255, 255, 0.88)";
             
             iframe.addEventListener("load", function(){
@@ -106,10 +110,11 @@ define(function(require, exports, module) {
                 });
             });
             session.transport.on("focus", function(){
-                tabManager.focusTab(tab);
+                tabManager.focusTab(doc.tab);
             });
             
-            session.addOther(function(){ session.transport.unload(); });
+            // Lets only destroy when the doc is destroyed
+            doc.addOther(function(){ session.transport.unload(); });
             
             editor.container.appendChild(session.iframe);
         });
@@ -122,7 +127,7 @@ define(function(require, exports, module) {
         });
         plugin.on("documentActivate", function(e){
             var session = e.doc.getSession();
-            var path = calcRootedPath(session.iframe.src);
+            var path = calcRootedPath(cleanIframeSrc(session.iframe.src));
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
