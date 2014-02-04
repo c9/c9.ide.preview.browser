@@ -108,19 +108,29 @@ define(function(require, exports, module) {
                     session.html = new HTMLDocument(sources.html)
                         .addTransport(session.transport);
                 });
-            });
+            }, doc);
             session.transport.on("focus", function(){
                 tabManager.focusTab(doc.tab);
-            });
+            }, doc);
+            
+            session.destroy = function(){
+                session.transport.unload();
+                delete session.editor;
+                delete session.transport;
+                delete session.iframe;
+                delete session.id;
+            }
             
             // Lets only destroy when the doc is destroyed
-            doc.addOther(function(){ session.transport.unload(); });
+            doc.addOther(function(){ session.destroy() });
             
             editor.container.appendChild(session.iframe);
         });
         plugin.on("documentUnload", function(e){
-            var doc    = e.doc;
-            var iframe = doc.getSession().iframe;
+            var doc     = e.doc;
+            var session = doc.getSession();
+            var iframe  = session.iframe;
+            
             iframe.parentNode.removeChild(iframe);
             
             doc.tab.className.remove("loading");
