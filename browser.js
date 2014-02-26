@@ -114,12 +114,13 @@ define(function(require, exports, module) {
             }, doc);
             
             session.destroy = function(){
-                session.transport.unload();
+                if (session.transport)
+                    session.transport.unload();
                 delete session.editor;
                 delete session.transport;
                 delete session.iframe;
                 delete session.id;
-            }
+            };
             
             // Lets only destroy when the doc is destroyed
             doc.addOther(function(){ session.destroy() });
