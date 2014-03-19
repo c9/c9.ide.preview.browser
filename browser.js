@@ -125,6 +125,17 @@ define(function(require, exports, module) {
             // Lets only destroy when the doc is destroyed
             doc.addOther(function(){ session.destroy() });
             
+            doc.on("canUnload", function(e){
+                var count   = session.transport.sources.length;
+                if (count == 1) return true;
+                
+                session.transport.once("empty", function(){
+                    doc.unload();
+                });
+                
+                return false;
+            });
+            
             editor.container.appendChild(session.iframe);
         });
         plugin.on("documentUnload", function(e){
