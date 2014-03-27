@@ -82,8 +82,13 @@ define(function(require, exports, module) {
                 
                 if (options.local) {
                     var url = cleanIframeSrc(iframe.contentWindow.location.href);
-                    editor.setLocation(url);
-                    session.currentLocation = url;
+                    if (url.indexOf("data:") === 0) {
+                        editor.setLocation(path);
+                    }
+                    else {
+                        editor.setLocation(url);
+                        session.currentLocation = url;
+                    }
                 }
                 else {
                     editor.setLocation(path);
