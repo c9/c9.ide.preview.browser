@@ -193,6 +193,8 @@ define(function(require, exports, module) {
             var iframe = plugin.activeSession.iframe;
             var tab    = plugin.activeDocument.tab;
             tab.className.add("loading");
+            if (iframe.src.match(/(.*)#/))
+                iframe.src = RegExp.$1;
             iframe.src = iframe.src;
         });
         plugin.on("popout", function(){
