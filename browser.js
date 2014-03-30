@@ -63,7 +63,7 @@ define(function(require, exports, module) {
             }
             
             var iframe = document.createElement("iframe");
-            // iframe.setAttribute("nwfaketop", true);
+            iframe.setAttribute("nwfaketop", true);
             iframe.setAttribute("nwdisable", true);
             
             iframe.style.width  = "100%";
@@ -89,6 +89,10 @@ define(function(require, exports, module) {
                         editor.setLocation(url);
                         session.currentLocation = url;
                     }
+                    
+                    iframe.contentWindow.opener = window;
+                    if (iframe.contentWindow.start)
+                        iframe.contentWindow.start(window);
                 }
                 else {
                     editor.setLocation(path);
