@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", 
-        "CSSDocument", "HTMLDocument"
+        "CSSDocument", "HTMLDocument", "JSDocument"
     ];
     main.provides = ["preview.browser"];
     return main;
@@ -13,7 +13,7 @@ define(function(require, exports, module) {
         var PostMessage  = imports["remote.PostMessage"];
         var CSSDocument  = imports.CSSDocument;
         var HTMLDocument = imports.HTMLDocument;
-        // var JSDocument   = imports.JSDocument;
+        var JSDocument   = imports.JSDocument;
         
         // var join        = require("path").join;
         // var dirname     = require("path").dirname;
@@ -111,9 +111,9 @@ define(function(require, exports, module) {
                     session.styleSheets = sources.styleSheets.map(function(path){
                         return new CSSDocument(path).addTransport(session.transport);
                     });
-                    // session.scripts = sources.scripts.map(function(path){
-                    //     return new JSDocument(path).addTransport(session.transport);
-                    // });
+                    session.scripts = sources.scripts.map(function(path){
+                        return new JSDocument(path).addTransport(session.transport);
+                    });
                     session.html = new HTMLDocument(sources.html)
                         .addTransport(session.transport);
                 });
