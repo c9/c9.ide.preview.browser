@@ -25,7 +25,7 @@ define(function(require, exports, module) {
             index    : 10,
             divider  : true,
             selector : function(path){
-                return path.match(/(?:\.html|\.htm|\.xhtml)$|^https?\:\/\//);
+                return /(?:\.html|\.htm|\.xhtml)$|^https?\:\/\//.test(path);
             }
         });
         
