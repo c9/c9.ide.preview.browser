@@ -136,7 +136,7 @@ define(function(require, exports, module) {
             
             doc.on("canUnload", function(e){
                 var count = session.transport.getWindows().length;
-                if (count === 1) return true;
+                if (count <= 1) return true;
                 
                 session.transport.once("empty", function(){
                     doc.unload();
