@@ -98,7 +98,7 @@ define(function(require, exports, module) {
                     editor.setLocation(path);
                 }
                 
-                tab.className.remove("loading");
+                tab.classList.remove("loading");
             });
             
             session.id = "livepreview" + counter++;
@@ -154,7 +154,7 @@ define(function(require, exports, module) {
             
             iframe.parentNode.removeChild(iframe);
             
-            doc.tab.className.remove("loading");
+            doc.tab.classList.remove("loading");
         });
         plugin.on("documentActivate", function(e) {
             var session = e.doc.getSession();
@@ -177,7 +177,7 @@ define(function(require, exports, module) {
                 : BASEPATH + e.url;
             session.url = url;
             
-            tab.className.add("loading");
+            tab.classList.add("loading");
             iframe.src = url + (~url.indexOf("?") ? "&" : "?")
                 + "_c9_id=" + session.id
                 + "&_c9_host=" + (options.local ? "local" : location.origin);
@@ -196,7 +196,7 @@ define(function(require, exports, module) {
         plugin.on("reload", function(){
             var iframe = plugin.activeSession.iframe;
             var tab = plugin.activeDocument.tab;
-            tab.className.add("loading");
+            tab.classList.add("loading");
             if (iframe.src.match(/(.*)#/))
                 iframe.src = RegExp.$1;
             iframe.src = iframe.src;
