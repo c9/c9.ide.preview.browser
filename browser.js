@@ -180,9 +180,11 @@ define(function(require, exports, module) {
             session.url = url;
             
             tab.classList.add("loading");
-            iframe.src = url + (~url.indexOf("?") ? "&" : "?")
+            var parts = url.split("#");
+            iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
                 + "_c9_id=" + session.id
                 + "&_c9_host=" + (options.local ? "local" : location.origin);
+                + (parts.length > 1 ? "#" + parts[1] : "")
             
             var path = calcRootedPath(url);
             tab.title = 
