@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", 
-        "CSSDocument", "HTMLDocument", "JSDocument"
+        "CSSDocument", "HTMLDocument", "JSDocument", "MenuItem", "commands"
     ];
     main.provides = ["preview.browser"];
     return main;
@@ -14,6 +14,8 @@ define(function(require, exports, module) {
         var CSSDocument = imports.CSSDocument;
         var HTMLDocument = imports.HTMLDocument;
         var JSDocument = imports.JSDocument;
+        var MenuItem = imports.MenuItem;
+        var commands = imports.commands;
         
         // var join = require("path").join;
         // var dirname = require("path").dirname;
@@ -49,7 +51,43 @@ define(function(require, exports, module) {
         /***** Lifecycle *****/
         
         plugin.on("load", function(){
+            commands.addCommand({
+                name: "scrollPreviewElementIntoView",
+                displayName: "Preview:scroll element into view",
+                bindKey: {win: "Ctrl-I", mac: "Ctrl-I"},
+                exec: function(editor) {
+                    if (editor.type == "preview")
+                        plugin.activeSession.transport.reveal();
+                    else
+                        editor.ace.session.htmldocument.scrollIntoView();
+                },
+                isAvailable: function(editor) {
+                    return editor 
+                        && (editor.ace && editor.ace.session.htmldocument
+                        || editor.type == "preview");
+                }
+            }, plugin);
+            
+            var item = new MenuItem({
+                caption: "Enable Highlighting", 
+                type: "check",
+                onclick: function(){
+                    var session = plugin.activeSession;
+                    session.transport.enableHighlighting = item.checked;
+                },
+                isAvailable: function(){
+                    item.checked = plugin.activeSession.transport.enableHighlighting;
+                    return true;
+                }
+            });
+            preview.settingsMenu.append(item);
+            
+            preview.settingsMenu.append(new MenuItem({ 
+                caption: "Scroll Preview Element Into View", 
+                command: "scrollPreviewElementIntoView"
+            }));
         });
+        
         plugin.on("documentLoad", function(e) {
             var doc = e.doc;
             var session = doc.getSession();
