@@ -183,7 +183,7 @@ define(function(require, exports, module) {
                 });
                 
                 return false;
-            });
+            }, session);
             
             editor.container.appendChild(session.iframe);
         });
