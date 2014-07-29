@@ -82,6 +82,21 @@ define(function(require, exports, module) {
             });
             preview.settingsMenu.append(item);
             
+            var item2 = new MenuItem({
+                caption: "Disable Live Preview Injection", 
+                type: "check",
+                onclick: function(){
+                    var session = plugin.activeSession;
+                    session.disableInjection = item2.checked;
+                    plugin.navigate({ url: session.path });
+                },
+                isAvailable: function(){
+                    item2.checked = plugin.activeSession.disableInjection;
+                    return true;
+                }
+            })
+            preview.settingsMenu.append(item2);
+            
             preview.settingsMenu.append(new MenuItem({ 
                 caption: "Scroll Preview Element Into View", 
                 command: "scrollPreviewElementIntoView"
@@ -218,11 +233,17 @@ define(function(require, exports, module) {
             session.url = url;
             
             tab.classList.add("loading");
-            var parts = url.split("#");
-            iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
-                + "_c9_id=" + session.id
-                + "&_c9_host=" + (options.local ? "local" : location.origin);
-                + (parts.length > 1 ? "#" + parts[1] : "")
+            
+            if (session.disableInjection) {
+                iframe.src = url;
+            }
+            else {
+                var parts = url.split("#");
+                iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
+                    + "_c9_id=" + session.id
+                    + "&_c9_host=" + (options.local ? "local" : location.origin);
+                    + (parts.length > 1 ? "#" + parts[1] : "")
+            }
             
             var path = calcRootedPath(url);
             tab.title = 
@@ -252,16 +273,19 @@ define(function(require, exports, module) {
             var state = e.state;
             
             state.currentLocation = session.currentLocation;
+            state.disableInjection = session.disableInjection;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
+            var state = e.state;
             
-            if (e.state.currentLocation) {
+            if (state.currentLocation) {
                 if (session.initPath)
-                    session.initPath = e.state.currentLocation;
+                    session.initPath = state.currentLocation;
                 // else
-                //     plugin.navigate({ url: e.state.currentLocation, doc: e.doc });
+                //     plugin.navigate({ url: state.currentLocation, doc: e.doc });
             }
+            session.disableInjection = state.disableInjection;
         });
         plugin.on("unload", function(){
         });
