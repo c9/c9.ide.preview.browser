@@ -227,6 +227,8 @@ define(function(require, exports, module) {
             var tab = plugin.activeDocument.tab;
             var session = plugin.activeSession;
             var iframe = session.iframe;
+            if (!iframe) // happens when save is called from collab see also previewer naviagate
+                return;
             var url = e.url.match(/^[a-z]\w{1,4}\:\/\//)
                 ? e.url
                 : BASEPATH + e.url;
@@ -242,7 +244,7 @@ define(function(require, exports, module) {
                 iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
                     + "_c9_id=" + session.id
                     + "&_c9_host=" + (options.local ? "local" : location.origin);
-                    + (parts.length > 1 ? "#" + parts[1] : "")
+                    + (parts.length > 1 ? "#" + parts[1] : "");
             }
             
             var path = calcRootedPath(url);
