@@ -1,12 +1,13 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", 
+        "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", "c9",
         "CSSDocument", "HTMLDocument", "JSDocument", "MenuItem", "commands"
     ];
     main.provides = ["preview.browser"];
     return main;
 
     function main(options, imports, register) {
+        var c9 = imports.c9;
         var Previewer = imports.Previewer;
         var tabManager = imports.tabManager;
         var preview = imports.preview;
@@ -73,10 +74,10 @@ define(function(require, exports, module) {
                 type: "check",
                 onclick: function(){
                     var session = plugin.activeSession;
-                    session.transport.enableHighlighting = item.checked;
+                    (session.transport || 0).enableHighlighting = item.checked;
                 },
                 isAvailable: function(){
-                    item.checked = plugin.activeSession.transport.enableHighlighting;
+                    item.checked = ((plugin.activeSession || 0).transport || 0).enableHighlighting;
                     return true;
                 }
             });
@@ -86,12 +87,12 @@ define(function(require, exports, module) {
                 caption: "Disable Live Preview Injection", 
                 type: "check",
                 onclick: function(){
-                    var session = plugin.activeSession;
+                    var session = plugin.activeSession || 0;
                     session.disableInjection = item2.checked;
                     plugin.navigate({ url: session.path });
                 },
                 isAvailable: function(){
-                    item2.checked = plugin.activeSession.disableInjection;
+                    item2.checked = (plugin.activeSession || 0).disableInjection;
                     return true;
                 }
             })
@@ -229,9 +230,10 @@ define(function(require, exports, module) {
             var iframe = session.iframe;
             if (!iframe) // happens when save is called from collab see also previewer naviagate
                 return;
-            var url = e.url.match(/^[a-z]\w{1,4}\:\/\//)
-                ? e.url
-                : BASEPATH + e.url;
+            var nurl = e.url.replace(/^~/, c9.home);
+            var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
+                ? nurl
+                : BASEPATH + nurl;
             session.url = url;
             
             tab.classList.add("loading");
