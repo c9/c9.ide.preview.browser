@@ -43,6 +43,13 @@ define(function(require, exports, module) {
             return url;
         }
         
+        function getIframeSrc(iframe){
+            var src;
+            try{ src = iframe.contentWindow.location.href; }
+            catch(e){ src = iframe.src }
+            return src;
+        }
+        
         function cleanIframeSrc(src) {
             return src
                 .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
@@ -128,14 +135,15 @@ define(function(require, exports, module) {
             iframe.addEventListener("load", function(){
                 if (!iframe.src) return;
                 
-                var path = calcRootedPath(cleanIframeSrc(iframe.src));
+                var src = getIframeSrc(iframe);
+                var path = calcRootedPath(cleanIframeSrc(src));
                 
                 tab.title = 
                 tab.tooltip = "[B] " + path;
-                session.lastSrc = iframe.src;
+                session.lastSrc = src;
                 
                 if (options.local) {
-                    var url = cleanIframeSrc(iframe.contentWindow.location.href);
+                    var url = cleanIframeSrc(getIframeSrc(iframe));
                     if (url.indexOf("data:") === 0) {
                         editor.setLocation(path);
                     }
@@ -214,7 +222,7 @@ define(function(require, exports, module) {
         });
         plugin.on("documentActivate", function(e) {
             var session = e.doc.getSession();
-            var path = calcRootedPath(cleanIframeSrc(session.iframe.src));
+            var path = calcRootedPath(cleanIframeSrc(getIframeSrc(session.iframe)));
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
@@ -264,12 +272,13 @@ define(function(require, exports, module) {
             var iframe = plugin.activeSession.iframe;
             var tab = plugin.activeDocument.tab;
             tab.classList.add("loading");
-            if (iframe.src.match(/(.*)#/))
-                iframe.src = RegExp.$1;
-            iframe.src = iframe.src;
+            var src = getIframeSrc(iframe);
+            if (src.match(/(.*)#/))
+                src = RegExp.$1;
+            iframe.src = src;
         });
         plugin.on("popout", function(){
-            var src = plugin.activeSession.iframe.src;
+            var src = getIframeSrc(plugin.activeSession.iframe);
             window.open(src);
         });
         plugin.on("getState", function(e) {
