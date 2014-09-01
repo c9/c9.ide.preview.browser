@@ -1,13 +1,12 @@
 define(function(require, exports, module) {
     main.consumes = [
-        "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", "c9",
+        "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", 
         "CSSDocument", "HTMLDocument", "JSDocument", "MenuItem", "commands"
     ];
     main.provides = ["preview.browser"];
     return main;
 
     function main(options, imports, register) {
-        var c9 = imports.c9;
         var Previewer = imports.Previewer;
         var tabManager = imports.tabManager;
         var preview = imports.preview;
@@ -43,13 +42,6 @@ define(function(require, exports, module) {
             return url;
         }
         
-        function getIframeSrc(iframe){
-            var src;
-            try{ src = iframe.contentWindow.location.href; }
-            catch(e){ src = iframe.src }
-            return src;
-        }
-        
         function cleanIframeSrc(src) {
             return src
                 .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
@@ -81,10 +73,10 @@ define(function(require, exports, module) {
                 type: "check",
                 onclick: function(){
                     var session = plugin.activeSession;
-                    (session.transport || 0).enableHighlighting = item.checked;
+                    session.transport.enableHighlighting = item.checked;
                 },
                 isAvailable: function(){
-                    item.checked = ((plugin.activeSession || 0).transport || 0).enableHighlighting;
+                    item.checked = plugin.activeSession.transport.enableHighlighting;
                     return true;
                 }
             });
@@ -94,12 +86,12 @@ define(function(require, exports, module) {
                 caption: "Disable Live Preview Injection", 
                 type: "check",
                 onclick: function(){
-                    var session = plugin.activeSession || 0;
+                    var session = plugin.activeSession;
                     session.disableInjection = item2.checked;
                     plugin.navigate({ url: session.path });
                 },
                 isAvailable: function(){
-                    item2.checked = (plugin.activeSession || 0).disableInjection;
+                    item2.checked = plugin.activeSession.disableInjection;
                     return true;
                 }
             })
@@ -135,15 +127,14 @@ define(function(require, exports, module) {
             iframe.addEventListener("load", function(){
                 if (!iframe.src) return;
                 
-                var src = getIframeSrc(iframe);
-                var path = calcRootedPath(cleanIframeSrc(src));
+                var path = calcRootedPath(cleanIframeSrc(iframe.src));
                 
                 tab.title = 
                 tab.tooltip = "[B] " + path;
-                session.lastSrc = src;
+                session.lastSrc = iframe.src;
                 
                 if (options.local) {
-                    var url = cleanIframeSrc(getIframeSrc(iframe));
+                    var url = cleanIframeSrc(iframe.contentWindow.location.href);
                     if (url.indexOf("data:") === 0) {
                         editor.setLocation(path);
                     }
@@ -222,7 +213,7 @@ define(function(require, exports, module) {
         });
         plugin.on("documentActivate", function(e) {
             var session = e.doc.getSession();
-            var path = calcRootedPath(cleanIframeSrc(getIframeSrc(session.iframe)));
+            var path = calcRootedPath(cleanIframeSrc(session.iframe.src));
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
@@ -238,10 +229,9 @@ define(function(require, exports, module) {
             var iframe = session.iframe;
             if (!iframe) // happens when save is called from collab see also previewer naviagate
                 return;
-            var nurl = e.url.replace(/^~/, c9.home);
-            var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
-                ? nurl
-                : BASEPATH + nurl;
+            var url = e.url.match(/^[a-z]\w{1,4}\:\/\//)
+                ? e.url
+                : BASEPATH + e.url;
             session.url = url;
             
             tab.classList.add("loading");
@@ -272,13 +262,12 @@ define(function(require, exports, module) {
             var iframe = plugin.activeSession.iframe;
             var tab = plugin.activeDocument.tab;
             tab.classList.add("loading");
-            var src = getIframeSrc(iframe);
-            if (src.match(/(.*)#/))
-                src = RegExp.$1;
-            iframe.src = src;
+            if (iframe.src.match(/(.*)#/))
+                iframe.src = RegExp.$1;
+            iframe.src = iframe.src;
         });
         plugin.on("popout", function(){
-            var src = getIframeSrc(plugin.activeSession.iframe);
+            var src = plugin.activeSession.iframe.src;
             window.open(src);
         });
         plugin.on("getState", function(e) {
