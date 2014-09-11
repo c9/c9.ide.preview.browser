@@ -242,9 +242,11 @@ define(function(require, exports, module) {
             var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
                 ? nurl
                 : BASEPATH + nurl;
-            session.url = url;
             
-            tab.classList.add("loading");
+            var base = (session.url || "").split("#")[0];
+            if (url.indexOf(base + "#") == -1 && url != base)
+                tab.classList.add("loading");
+            session.url = url;
             
             if (session.disableInjection) {
                 iframe.src = url;
@@ -253,7 +255,7 @@ define(function(require, exports, module) {
                 var parts = url.split("#");
                 iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
                     + "_c9_id=" + session.id
-                    + "&_c9_host=" + (options.local ? "local" : location.origin);
+                    + "&_c9_host=" + (options.local ? "local" : location.origin)
                     + (parts.length > 1 ? "#" + parts[1] : "");
             }
             
@@ -273,8 +275,8 @@ define(function(require, exports, module) {
             var tab = plugin.activeDocument.tab;
             tab.classList.add("loading");
             var src = getIframeSrc(iframe);
-            if (src.match(/(.*)#/))
-                src = RegExp.$1;
+            // if (src.match(/(.*)#/))
+            //     src = RegExp.$1;
             iframe.src = src;
         });
         plugin.on("popout", function(){
