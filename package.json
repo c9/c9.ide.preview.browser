@@ -9,14 +9,12 @@
         "url": "http://github.com/c9/c9.ide.preview.browser.git"
     },
     "plugins": {
-        "plugin": {
-            "browser": {}
-        }
+        "browser": {}
     },
     "categories": [
         "core"
     ],
     "licenses": [
-        ""
+        "MIT"
     ]
 }
