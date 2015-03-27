@@ -87,7 +87,7 @@ define(function(require, exports, module) {
                     item.checked = ((plugin.activeSession || 0).transport || 0).enableHighlighting;
                     return true;
                 }
-            });
+            }, plugin);
             preview.settingsMenu.append(item);
             
             var item2 = new MenuItem({
@@ -102,19 +102,19 @@ define(function(require, exports, module) {
                     item2.checked = (plugin.activeSession || 0).disableInjection;
                     return true;
                 }
-            })
+            }, plugin)
             preview.settingsMenu.append(item2);
             
             preview.settingsMenu.append(new MenuItem({ 
                 caption: "Scroll Preview Element Into View", 
                 command: "scrollPreviewElementIntoView"
-            }));
+            }, plugin));
         });
         
-        plugin.on("documentLoad", function(e) {
+        plugin.on("sessionStart", function(e) {
             var doc = e.doc;
-            var session = doc.getSession();
-            var tab = doc.tab;
+            var session = e.session;
+            var tab = e.tab;
             var editor = e.editor;
             
             if (session.iframe) {
@@ -211,32 +211,32 @@ define(function(require, exports, module) {
             
             editor.container.appendChild(session.iframe);
         });
-        plugin.on("documentUnload", function(e) {
-            var doc = e.doc;
-            var session = doc.getSession();
+        plugin.on("sessionEnd", function(e) {
+            var tab = e.tab;
+            var session = e.session;
             var iframe = session.iframe;
             
             iframe.parentNode.removeChild(iframe);
             
-            doc.tab.classList.remove("loading");
+            tab.classList.remove("loading");
         });
-        plugin.on("documentActivate", function(e) {
-            var session = e.doc.getSession();
+        plugin.on("sessionActivate", function(e) {
+            var session = e.session;
             var path = calcRootedPath(cleanIframeSrc(getIframeSrc(session.iframe)));
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
             session.editor.setButtonStyle("Browser", "page_white.png");
         });
-        plugin.on("documentDeactivate", function(e) {
-            var session = e.doc.getSession();
+        plugin.on("sessionDeactivate", function(e) {
+            var session = e.session;
             session.iframe.style.display = "none";
         });
         plugin.on("navigate", function(e) {
             var tab = plugin.activeDocument.tab;
             var session = plugin.activeSession;
             var iframe = session.iframe;
-            if (!iframe) // happens when save is called from collab see also previewer naviagate
+            if (!iframe) // happens when save is called from collab see also previewer navigate
                 return;
             var nurl = e.url.replace(/^~/, c9.home);
             var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
