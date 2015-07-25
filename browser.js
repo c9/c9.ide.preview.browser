@@ -45,15 +45,48 @@ define(function(require, exports, module) {
         
         function getIframeSrc(iframe){
             var src;
-            try{ src = iframe.contentWindow.location.href; }
-            catch(e){ src = iframe.src }
+            try { src = iframe.contentWindow.location.href; }
+            catch(e) { src = iframe.src }
             return src;
         }
         
         function cleanIframeSrc(src) {
             return src
-                .replace(/_c9_id=\w+\&_c9_host=.*?(?:\&|$)/, "")
+                .replace(/([&?])_c9_id=\w+\&_c9_host=[^&#]+/g, "$1")
                 .replace(/[\?\&]$/, "");
+        }
+        
+        function calcAbsolutepath(url) {
+            if (url[0] == "/") return BASEPATH + url;
+            return url;
+        }
+        
+        function loadPreviewSession(session, allowAutoFocus) {
+            var iframe = session.iframe;
+            
+            session.suspended = false;
+            
+            var tab = session.tab;
+            tab.classList.add("loading");
+            
+            if (!allowAutoFocus) {
+                window.addEventListener("blur", function onblur(x) {
+                    window.removeEventListener("blur", onblur, false);
+                    if (document.activeElement == iframe)
+                        setTimeout(function() { window.focus(); });
+                }, false);
+            }
+            var url = calcAbsolutepath(session.url);
+            
+            if (!session.disableInjection) {
+                var parts = url.split("#");
+                url = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
+                    + "_c9_id=" + session.id
+                    + "&_c9_host=" + (options.local ? "local" : location.origin)
+                    + (parts.length > 1 ? "#" + parts.slice(1).join("") : "");
+            }
+            
+            iframe.src = url;
         }
         
         /***** Lifecycle *****/
@@ -102,7 +135,7 @@ define(function(require, exports, module) {
                     item2.checked = (plugin.activeSession || 0).disableInjection;
                     return true;
                 }
-            }, plugin)
+            }, plugin);
             preview.settingsMenu.append(item2);
             
             preview.settingsMenu.append(new MenuItem({ 
@@ -123,9 +156,16 @@ define(function(require, exports, module) {
                 return;
             }
             
+            if (!tabManager.isReady)
+                session.suspended = true;
+            
             var iframe = document.createElement("iframe");
             iframe.setAttribute("nwfaketop", true);
             iframe.setAttribute("nwdisable", true);
+            
+            // dissallow top navigation
+            if (!options.local)
+                iframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts");
             
             iframe.style.width = "100%";
             iframe.style.height = "100%";
@@ -216,13 +256,12 @@ define(function(require, exports, module) {
             var session = e.session;
             var iframe = session.iframe;
             
-            iframe.parentNode.removeChild(iframe);
-            
+            iframe.remove();
             tab.classList.remove("loading");
         });
         plugin.on("sessionActivate", function(e) {
             var session = e.session;
-            var path = calcRootedPath(cleanIframeSrc(getIframeSrc(session.iframe)));
+            var path = calcRootedPath(session.url || session.path);
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
@@ -232,12 +271,13 @@ define(function(require, exports, module) {
             var session = e.session;
             session.iframe.style.display = "none";
         });
-        plugin.on("navigate", function(e) {
+        plugin.on("navigate", function navigate(e) {
             var tab = plugin.activeDocument.tab;
             var session = plugin.activeSession;
             var iframe = session.iframe;
             if (!iframe) // happens when save is called from collab see also previewer navigate
                 return;
+            
             var nurl = e.url.replace(/^~/, c9.home);
             var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
                 ? nurl
@@ -248,36 +288,36 @@ define(function(require, exports, module) {
                 tab.classList.add("loading");
             session.url = url;
             
-            if (session.disableInjection) {
-                iframe.src = url;
-            }
-            else {
-                var parts = url.split("#");
-                iframe.src = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
-                    + "_c9_id=" + session.id
-                    + "&_c9_host=" + (options.local ? "local" : location.origin)
-                    + (parts.length > 1 ? "#" + parts[1] : "");
-            }
             
             var path = calcRootedPath(url);
             tab.title = 
             tab.tooltip = "[B] " + path;
             
             plugin.activeSession.editor.setLocation(path, true);
+            
+            
+            if (session.suspended) {
+                // iframe.src = "about:blank";
+                iframe.contentDocument.body.innerHTML = "<a>Click to load</a>";
+                iframe.contentDocument.body.firstChild.setAttribute("href", url);
+                iframe.contentWindow.onclick = function() {
+                    session.suspended = false;
+                    navigate(e);
+                };
+                session.suspended = false;
+            } else {
+                loadPreviewSession(session);
+            }
         });
         plugin.on("update", function(e) {
+            
             // var iframe = plugin.activeSession.iframe;
             // if (e.saved)
             //     iframe.src = iframe.src;
         });
-        plugin.on("reload", function(){
-            var iframe = plugin.activeSession.iframe;
-            var tab = plugin.activeDocument.tab;
-            tab.classList.add("loading");
-            var src = getIframeSrc(iframe);
-            // if (src.match(/(.*)#/))
-            //     src = RegExp.$1;
-            iframe.src = src;
+        plugin.on("reload", function() {
+            var session = plugin.activeSession;
+            loadPreviewSession(session, tabManager.focussedTab == session.tab);
         });
         plugin.on("popout", function(){
             var src = getIframeSrc(plugin.activeSession.iframe);
