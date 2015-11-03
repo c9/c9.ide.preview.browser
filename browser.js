@@ -165,7 +165,7 @@ define(function(require, exports, module) {
             
             // dissallow top navigation
             if (!options.local)
-                iframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts");
+                iframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts allow-modals");
             
             iframe.style.width = "100%";
             iframe.style.height = "100%";
