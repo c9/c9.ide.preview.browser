@@ -47,6 +47,8 @@ define(function(require, exports, module) {
             var src;
             try { src = iframe.contentWindow.location.href; }
             catch(e) { src = iframe.src }
+            if (src == "about:blank")
+                src = "";
             return src;
         }
         
@@ -84,6 +86,19 @@ define(function(require, exports, module) {
                     + "_c9_id=" + session.id
                     + "&_c9_host=" + (options.local ? "local" : location.origin)
                     + (parts.length > 1 ? "#" + parts.slice(1).join("") : "");
+            }
+            
+            var mainPath = url.match(/^[^?#]*/)[0];
+            var noSandbox = /\.(pdf)$/.test(mainPath);
+            
+            // dissallow top navigation
+            if (!options.local) {
+                if (noSandbox) {
+                    iframe.removeAttribute("sandbox");
+                } else {
+                    iframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-popups"
+                        + " allow-same-origin allow-scripts allow-modals allow-popups-to-escape-sandbox");
+                }
             }
             
             iframe.src = url;
@@ -162,10 +177,6 @@ define(function(require, exports, module) {
             var iframe = document.createElement("iframe");
             iframe.setAttribute("nwfaketop", true);
             iframe.setAttribute("nwdisable", true);
-            
-            // dissallow top navigation
-            if (!options.local)
-                iframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts allow-modals");
             
             iframe.style.width = "100%";
             iframe.style.height = "100%";
@@ -321,6 +332,8 @@ define(function(require, exports, module) {
         });
         plugin.on("popout", function(){
             var src = getIframeSrc(plugin.activeSession.iframe);
+            if (!src)
+                src = plugin.activeSession.url;
             window.open(src);
         });
         plugin.on("getState", function(e) {
