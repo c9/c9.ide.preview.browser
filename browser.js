@@ -272,7 +272,7 @@ define(function(require, exports, module) {
         });
         plugin.on("sessionActivate", function(e) {
             var session = e.session;
-            var path = calcRootedPath(session.url || session.path);
+            var path = calcRootedPath(session.url || session.path || session.initPath);
             
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
