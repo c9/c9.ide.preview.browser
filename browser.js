@@ -80,7 +80,7 @@ define(function(require, exports, module) {
             }
             var url = calcAbsolutepath(session.url);
             
-            if (!session.disableInjection) {
+            if (!session.disableInjection && !/^(data|blob):/.test(url)) {
                 var parts = url.split("#");
                 url = parts[0] + (~parts[0].indexOf("?") ? "&" : "?")
                     + "_c9_id=" + session.id
@@ -171,7 +171,8 @@ define(function(require, exports, module) {
                 return;
             }
             
-            if (!tabManager.isReady)
+            // do not restore untrusted tabs at startup, since they may contain infinite loops
+            if (!tabManager.isReady && session.trustedPath != session.initPath)
                 session.suspended = true;
             
             var iframe = document.createElement("iframe");
@@ -290,7 +291,7 @@ define(function(require, exports, module) {
                 return;
             
             var nurl = e.url.replace(/^~/, c9.home);
-            var url = nurl.match(/^[a-z]\w{1,4}\:\/\//)
+            var url = nurl.match(/^[a-z]\w{1,4}\:/)
                 ? nurl
                 : BASEPATH + nurl;
             
@@ -342,6 +343,7 @@ define(function(require, exports, module) {
             
             state.currentLocation = session.currentLocation;
             state.disableInjection = session.disableInjection;
+            state.trustedPath = session.trustedPath;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
