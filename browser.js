@@ -101,7 +101,7 @@ define(function(require, exports, module) {
                 }
             }
             
-            if (!options.local && url.indexOf("http://") === 0)
+            if (!options.local && window.location.protocol == "https:" && url.startsWith("http://"))
                 url = options.staticPrefix + "/nohttps.html#" + url;
             
             iframe.src = url;
