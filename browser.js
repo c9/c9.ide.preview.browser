@@ -101,6 +101,9 @@ define(function(require, exports, module) {
                 }
             }
             
+            if (!options.local && url.indexOf("http://") === 0)
+                url = options.staticPrefix + "/nohttps.html#" + url;
+            
             iframe.src = url;
         }
         
@@ -208,7 +211,7 @@ define(function(require, exports, module) {
                     if (iframe.contentWindow.start)
                         iframe.contentWindow.start(window);
                 }
-                else {
+                else if (!~path.indexOf(options.staticPrefix)) {
                     editor.setLocation(path);
                 }
                 
@@ -286,6 +289,7 @@ define(function(require, exports, module) {
         plugin.on("navigate", function navigate(e) {
             var tab = plugin.activeDocument.tab;
             var session = plugin.activeSession;
+            
             var iframe = session.iframe;
             if (!iframe) // happens when save is called from collab see also previewer navigate
                 return;
@@ -300,21 +304,23 @@ define(function(require, exports, module) {
                 tab.classList.add("loading");
             session.url = url;
             
-            
             var path = calcRootedPath(url);
             tab.title = 
             tab.tooltip = "[B] " + path;
             
             plugin.activeSession.editor.setLocation(path, true);
             
-            
             if (session.suspended) {
-                // iframe.src = "about:blank";
-                iframe.contentDocument.body.innerHTML = "<a>Click to load</a>";
-                iframe.contentDocument.body.firstChild.setAttribute("href", url);
+                var staticPrefix = options.staticPrefix;
+                if (staticPrefix.indexOf("https://") !== 0)
+                    staticPrefix = location.protocol + "//" + location.host + staticPrefix;
+                
+                iframe.contentDocument.body.innerHTML = require("text!./suspended.html")
+                    .replace(/\{\{staticPrefix\}\}/g, staticPrefix);
+                    
                 iframe.contentWindow.onclick = function() {
                     session.suspended = false;
-                    navigate(e);
+                    loadPreviewSession(session);
                 };
                 session.suspended = false;
             } else {
