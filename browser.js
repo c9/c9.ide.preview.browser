@@ -28,7 +28,7 @@ define(function(require, exports, module) {
             index: 10,
             divider: true,
             selector: function(path) {
-                return /(?:\.html|\.htm|\.xhtml)$|^https?\:\/\//.test(path);
+                return /\.(?:html|htm|xhtml|pdf|svg)$|^https?\:\/\//.test(path);
             }
         });
         
