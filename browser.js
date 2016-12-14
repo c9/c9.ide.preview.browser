@@ -1,13 +1,14 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Previewer", "preview", "vfs", "tabManager", "remote.PostMessage", "c9",
-        "CSSDocument", "HTMLDocument", "JSDocument", "MenuItem", "commands"
+        "CSSDocument", "HTMLDocument", "JSDocument", "MenuItem", "commands", "util"
     ];
     main.provides = ["preview.browser"];
     return main;
 
     function main(options, imports, register) {
         var c9 = imports.c9;
+        var util = imports.util;
         var Previewer = imports.Previewer;
         var tabManager = imports.tabManager;
         var preview = imports.preview;
@@ -38,7 +39,7 @@ define(function(require, exports, module) {
         /***** Methods *****/
         
         function calcRootedPath(url) {
-            if (url.substr(0, BASEPATH.length) == BASEPATH)
+            if (url.startsWith(BASEPATH))
                 return url.substr(BASEPATH.length);
             return url;
         }
@@ -278,6 +279,9 @@ define(function(require, exports, module) {
             var session = e.session;
             var path = calcRootedPath(session.url || session.path || session.initPath);
             
+            if (/^https?:/.test(path))
+                session.disableInjection = true;
+            
             session.iframe.style.display = "block";
             session.editor.setLocation(path, true);
             session.editor.setButtonStyle("Browser", "page_white.png");
@@ -337,11 +341,14 @@ define(function(require, exports, module) {
             var session = plugin.activeSession;
             loadPreviewSession(session, tabManager.focussedTab == session.tab);
         });
-        plugin.on("popout", function(){
+        plugin.on("popout", function() {
             var src = getIframeSrc(plugin.activeSession.iframe);
             if (!src)
                 src = plugin.activeSession.url;
-            window.open(src);
+            if (!plugin.activeSession.disableInjection)
+                window.open(src);
+            else
+                util.openNewWindow(src);
         });
         plugin.on("getState", function(e) {
             var session = e.doc.getSession();
