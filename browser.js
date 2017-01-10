@@ -208,9 +208,7 @@ define(function(require, exports, module) {
                         session.currentLocation = url;
                     }
                     
-                    iframe.contentWindow.opener = window;
-                    if (iframe.contentWindow.start)
-                        iframe.contentWindow.start(window);
+                    iframe.contentWindow.postMessage("start-c9-livecss", "*");
                 }
                 else if (!~path.indexOf(options.staticPrefix)) {
                     editor.setLocation(path);
