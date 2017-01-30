@@ -193,9 +193,7 @@ define(function(require, exports, module) {
                 
                 var src = getIframeSrc(iframe);
                 var path = calcRootedPath(cleanIframeSrc(src));
-                
-                tab.title = 
-                tab.tooltip = "[B] " + path;
+
                 session.lastSrc = src;
                 
                 if (options.local) {
@@ -307,9 +305,9 @@ define(function(require, exports, module) {
             session.url = url;
             
             var path = calcRootedPath(url);
-            tab.title = 
             tab.tooltip = "[B] " + path;
-            
+            tab.title = session.doc.title || tab.tooltip;
+
             plugin.activeSession.editor.setLocation(path, true);
             
             if (session.suspended) {
