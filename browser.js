@@ -44,10 +44,10 @@ define(function(require, exports, module) {
             return url;
         }
         
-        function getIframeSrc(iframe){
+        function getIframeSrc(iframe) {
             var src;
             try { src = iframe.contentWindow.location.href; }
-            catch(e) { src = iframe.src }
+            catch (e) { src = iframe.src; }
             if (src == "about:blank")
                 src = "";
             return src;
@@ -110,11 +110,11 @@ define(function(require, exports, module) {
         
         /***** Lifecycle *****/
         
-        plugin.on("load", function(){
+        plugin.on("load", function() {
             commands.addCommand({
                 name: "scrollPreviewElementIntoView",
                 displayName: "Preview:scroll element into view",
-                bindKey: {win: "Ctrl-I", mac: "Ctrl-I"},
+                bindKey: { win: "Ctrl-I", mac: "Ctrl-I" },
                 exec: function(editor) {
                     if (editor.type == "preview")
                         plugin.activeSession.transport.reveal();
@@ -131,11 +131,11 @@ define(function(require, exports, module) {
             var item = new MenuItem({
                 caption: "Enable Highlighting", 
                 type: "check",
-                onclick: function(){
+                onclick: function() {
                     var session = plugin.activeSession;
                     (session.transport || 0).enableHighlighting = item.checked;
                 },
-                isAvailable: function(){
+                isAvailable: function() {
                     item.checked = ((plugin.activeSession || 0).transport || 0).enableHighlighting;
                     return true;
                 }
@@ -145,12 +145,12 @@ define(function(require, exports, module) {
             var item2 = new MenuItem({
                 caption: "Disable Live Preview Injection", 
                 type: "check",
-                onclick: function(){
+                onclick: function() {
                     var session = plugin.activeSession || 0;
                     session.disableInjection = item2.checked;
                     plugin.navigate({ url: session.path });
                 },
-                isAvailable: function(){
+                isAvailable: function() {
                     item2.checked = (plugin.activeSession || 0).disableInjection;
                     return true;
                 }
@@ -188,7 +188,7 @@ define(function(require, exports, module) {
             iframe.style.border = 0;
             iframe.style.backgroundColor = "rgba(255, 255, 255, 0.88)";
             
-            iframe.addEventListener("load", function(){
+            iframe.addEventListener("load", function() {
                 if (!iframe.src) return;
                 
                 var src = getIframeSrc(iframe);
@@ -222,7 +222,7 @@ define(function(require, exports, module) {
             session.editor = editor;
             session.transport = new PostMessage(iframe, session.id);
             
-            session.transport.on("ready", function(){
+            session.transport.on("ready", function() {
                 session.transport.getSources(function(err, sources) {
                     session.styleSheets = sources.styleSheets.map(function(path) {
                         return new CSSDocument(path).addTransport(session.transport);
@@ -234,11 +234,11 @@ define(function(require, exports, module) {
                         .addTransport(session.transport);
                 });
             }, doc);
-            session.transport.on("focus", function(){
+            session.transport.on("focus", function() {
                 tabManager.focusTab(doc.tab);
             }, doc);
             
-            session.destroy = function(){
+            session.destroy = function() {
                 if (session.transport)
                     session.transport.unload();
                 delete session.editor;
@@ -248,7 +248,7 @@ define(function(require, exports, module) {
             };
             
             // Lets only destroy when the doc is destroyed
-            doc.addOther(function(){ session.destroy() });
+            doc.addOther(function() { session.destroy(); });
             
             doc.on("canUnload", function(e) {
                 if (!session.transport) return;
@@ -256,7 +256,7 @@ define(function(require, exports, module) {
                 var count = session.transport.getWindows().length;
                 if (count <= 1) return true;
                 
-                session.transport.once("empty", function(){
+                session.transport.once("empty", function() {
                     doc.unload();
                 });
                 
@@ -368,7 +368,7 @@ define(function(require, exports, module) {
             }
             session.disableInjection = state.disableInjection;
         });
-        plugin.on("unload", function(){
+        plugin.on("unload", function() {
         });
         
         /***** Register and define API *****/
