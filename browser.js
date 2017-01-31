@@ -194,6 +194,10 @@ define(function(require, exports, module) {
                 var src = getIframeSrc(iframe);
                 var path = calcRootedPath(cleanIframeSrc(src));
 
+                // ensure tab title and tooltip are updated on clicking links
+                tab.tooltip = "[B] " + path;
+                tab.title = session.doc.title || tab.tooltip;
+
                 session.lastSrc = src;
                 
                 if (options.local) {
