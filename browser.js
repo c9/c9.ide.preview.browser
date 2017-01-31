@@ -107,6 +107,28 @@ define(function(require, exports, module) {
             
             iframe.src = url;
         }
+
+        function setTitle(session, tab, path) {
+            // remember default title between reloads
+            if (!session.doc.title) {
+                session.doc.title = "[B] " + path;
+                session.defaultTitle = true;
+            }
+            // update title if default is used
+            else if (session.defaultTitle) {
+                tab.title = "[B] " + path;
+            }
+
+            // remember default tooltip between reloads
+            if (!session.doc.tooltip) {
+                session.doc.tooltip = tab.title;
+                session.defaultTooltip = true;
+            }
+            // update tooltip if default is used
+            else if(session.defaultTooltip) {
+                tab.tooltip = tab.title;
+            }
+        }
         
         /***** Lifecycle *****/
         
@@ -195,8 +217,7 @@ define(function(require, exports, module) {
                 var path = calcRootedPath(cleanIframeSrc(src));
 
                 // ensure tab title and tooltip are updated on clicking links
-                tab.tooltip = "[B] " + path;
-                tab.title = session.doc.title || tab.tooltip;
+                setTitle(session, tab, path);
 
                 session.lastSrc = src;
                 
@@ -309,8 +330,7 @@ define(function(require, exports, module) {
             session.url = url;
             
             var path = calcRootedPath(url);
-            tab.tooltip = "[B] " + path;
-            tab.title = session.doc.title || tab.tooltip;
+            setTitle(session, tab, path);
 
             plugin.activeSession.editor.setLocation(path, true);
             
@@ -357,6 +377,10 @@ define(function(require, exports, module) {
             state.currentLocation = session.currentLocation;
             state.disableInjection = session.disableInjection;
             state.trustedPath = session.trustedPath;
+
+            // title and tooltip
+            state.defaultTitle = session.defaultTitle;
+            state.defaultTooltip = session.defaultTooltip;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
@@ -369,6 +393,10 @@ define(function(require, exports, module) {
                 //     plugin.navigate({ url: state.currentLocation, doc: e.doc });
             }
             session.disableInjection = state.disableInjection;
+
+            // title and tooltip
+            session.defaultTitle = state.defaultTitle;
+            session.defaultTooltip = state.defaultTooltip;
         });
         plugin.on("unload", function(){
         });
