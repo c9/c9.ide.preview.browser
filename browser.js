@@ -118,16 +118,6 @@ define(function(require, exports, module) {
             else if (session.defaultTitle) {
                 tab.title = "[B] " + path;
             }
-
-            // remember default tooltip between reloads
-            if (!session.doc.tooltip) {
-                session.doc.tooltip = tab.title;
-                session.defaultTooltip = true;
-            }
-            // update tooltip if default is used
-            else if(session.defaultTooltip) {
-                tab.tooltip = tab.title;
-            }
         }
         
         /***** Lifecycle *****/
@@ -378,9 +368,8 @@ define(function(require, exports, module) {
             state.disableInjection = session.disableInjection;
             state.trustedPath = session.trustedPath;
 
-            // title and tooltip
+            // title
             state.defaultTitle = session.defaultTitle;
-            state.defaultTooltip = session.defaultTooltip;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
@@ -394,9 +383,8 @@ define(function(require, exports, module) {
             }
             session.disableInjection = state.disableInjection;
 
-            // title and tooltip
+            // title
             session.defaultTitle = state.defaultTitle;
-            session.defaultTooltip = state.defaultTooltip;
         });
         plugin.on("unload", function(){
         });
