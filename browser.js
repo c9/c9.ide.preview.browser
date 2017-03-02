@@ -109,14 +109,12 @@ define(function(require, exports, module) {
         }
 
         function setTitle(session, tab, path) {
-            // remember default title between reloads
-            if (!session.doc.title) {
+            if (!session.doc.title || session.defaultTitleSet) {
+                // set or update default title
                 session.doc.title = "[B] " + path;
-                session.defaultTitle = true;
-            }
-            // update title if default is used
-            else if (session.defaultTitle) {
-                tab.title = "[B] " + path;
+
+                // remember whether default title is used
+                session.defaultTitleSet = true;
             }
         }
         
@@ -369,7 +367,7 @@ define(function(require, exports, module) {
             state.trustedPath = session.trustedPath;
 
             // title
-            state.defaultTitle = session.defaultTitle;
+            state.defaultTitleSet = session.defaultTitleSet;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
@@ -384,7 +382,7 @@ define(function(require, exports, module) {
             session.disableInjection = state.disableInjection;
 
             // title
-            session.defaultTitle = state.defaultTitle;
+            session.defaultTitleSet = state.defaultTitleSet;
         });
         plugin.on("unload", function(){
         });
