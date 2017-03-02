@@ -107,6 +107,16 @@ define(function(require, exports, module) {
             
             iframe.src = url;
         }
+
+        function setTitle(session, tab, path) {
+            if (!session.doc.title || session.defaultTitleSet) {
+                // set or update default title
+                session.doc.title = "[B] " + path;
+
+                // remember whether default title is used
+                session.defaultTitleSet = true;
+            }
+        }
         
         /***** Lifecycle *****/
         
@@ -193,9 +203,10 @@ define(function(require, exports, module) {
                 
                 var src = getIframeSrc(iframe);
                 var path = calcRootedPath(cleanIframeSrc(src));
-                
-                tab.title = 
-                tab.tooltip = "[B] " + path;
+
+                // ensure tab title and tooltip are updated on clicking links
+                setTitle(session, tab, path);
+
                 session.lastSrc = src;
                 
                 if (options.local) {
@@ -307,9 +318,8 @@ define(function(require, exports, module) {
             session.url = url;
             
             var path = calcRootedPath(url);
-            tab.title = 
-            tab.tooltip = "[B] " + path;
-            
+            setTitle(session, tab, path);
+
             plugin.activeSession.editor.setLocation(path, true);
             
             if (session.suspended) {
@@ -355,6 +365,9 @@ define(function(require, exports, module) {
             state.currentLocation = session.currentLocation;
             state.disableInjection = session.disableInjection;
             state.trustedPath = session.trustedPath;
+
+            // title
+            state.defaultTitleSet = session.defaultTitleSet;
         });
         plugin.on("setState", function(e) {
             var session = e.doc.getSession();
@@ -367,6 +380,9 @@ define(function(require, exports, module) {
                 //     plugin.navigate({ url: state.currentLocation, doc: e.doc });
             }
             session.disableInjection = state.disableInjection;
+
+            // title
+            session.defaultTitleSet = state.defaultTitleSet;
         });
         plugin.on("unload", function() {
         });
